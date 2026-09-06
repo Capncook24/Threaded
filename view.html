@@ -31,14 +31,18 @@
     }
     h1{
       font-family:"Bricolage Grotesque",sans-serif;font-weight:700;
-      font-size:26px;letter-spacing:-.01em;line-height:1.2;margin:0 0 28px;
+      font-size:26px;letter-spacing:-.01em;line-height:1.2;margin:0 0 8px;
     }
-    .item{
-      display:flex;gap:16px;padding:20px 0;border-top:1px solid var(--line);
-      align-items:flex-start;text-decoration:none;color:inherit;
+    .gift-banner{
+      font-size:12px;color:var(--accent-ink);background:var(--accent-bg);
+      padding:8px 12px;border-radius:10px;margin-bottom:24px;
     }
+    .item{padding:20px 0;border-top:1px solid var(--line);}
     .item:first-of-type{border-top:none;}
-    .item img{
+    .item-link{
+      display:flex;gap:16px;align-items:flex-start;text-decoration:none;color:inherit;
+    }
+    .item-link img{
       width:92px;height:118px;object-fit:cover;border-radius:12px;
       background:var(--pill-bg);flex-shrink:0;
     }
@@ -50,6 +54,24 @@
     .price{font-size:13px;color:var(--ink);font-weight:600;}
     .note{font-size:12.5px;color:var(--accent-ink);margin-top:8px;font-style:italic;}
 
+    .claim{margin-top:14px;padding-left:108px;}
+    .claim-btn{
+      font-size:12px;font-weight:600;color:var(--accent-ink);background:var(--accent-bg);
+      border:none;padding:7px 14px;border-radius:20px;cursor:pointer;font-family:inherit;
+    }
+    .claim-form{display:flex;gap:6px;}
+    .claim-form input{
+      font-size:12px;padding:7px 12px;border:1px solid var(--line);border-radius:20px;
+      flex:1;min-width:0;font-family:inherit;
+    }
+    .claim-form button{
+      font-size:12px;font-weight:600;color:#fff;background:var(--accent-ink);
+      border:none;padding:7px 14px;border-radius:20px;cursor:pointer;flex-shrink:0;font-family:inherit;
+    }
+    .claimed{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:10px;}
+    .claimed strong{color:var(--ink);}
+    .claimed .undo{font-size:11px;color:var(--muted);background:none;border:none;text-decoration:underline;cursor:pointer;padding:0;font-family:inherit;}
+
     #empty,#error{
       text-align:center;color:var(--muted);font-size:14px;padding:60px 20px;
     }
@@ -60,6 +82,7 @@
   <div class="wrap">
     <div class="eyebrow" id="eyebrow" hidden>Wardrobe</div>
     <h1 id="heading">Wardrobe</h1>
+    <div class="gift-banner" id="giftBanner" hidden>You're viewing the gift-coordination link — you can mark items you're getting.</div>
     <div id="empty" hidden>No items saved yet.</div>
     <div id="error" hidden></div>
     <div id="list"></div>
@@ -69,9 +92,148 @@
     const SUPABASE_URL = 'https://dsgjgnutkrwfgnrhfvnb.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_YIbIGsNUjfdO1zI2PGoMUA_o8M4ahtn';
 
+    async function supabaseFetch(path, options = {}) {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+        ...options,
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          ...(options.headers || {}),
+        },
+      });
+      const text = await res.text();
+      if (!res.ok) throw new Error(`Supabase ${res.status}: ${text}`);
+      return text ? JSON.parse(text) : null;
+    }
+
+    function renderItem(item, giftMode) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'item';
+
+      const link = document.createElement('a');
+      link.className = 'item-link';
+      link.href = item.url || '#';
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+
+      const img = document.createElement('img');
+      img.src = item.image || '';
+      img.alt = item.title || '';
+
+      const info = document.createElement('div');
+      info.className = 'info';
+
+      const name = document.createElement('div');
+      name.className = 'name';
+      name.textContent = item.title || '(untitled)';
+
+      const row = document.createElement('div');
+      row.className = 'row';
+      if (item.size) {
+        const sizePill = document.createElement('span');
+        sizePill.className = 'pill accent';
+        sizePill.textContent = `Size ${item.size}`;
+        row.append(sizePill);
+      }
+      if (item.site) {
+        const sitePill = document.createElement('span');
+        sitePill.className = 'pill';
+        sitePill.textContent = item.site.replace(/^www\./, '');
+        row.append(sitePill);
+      }
+
+      info.append(name, row);
+
+      if (item.price) {
+        const price = document.createElement('div');
+        price.className = 'price';
+        price.textContent = item.price;
+        info.append(price);
+      }
+
+      if (item.note) {
+        const note = document.createElement('div');
+        note.className = 'note';
+        note.textContent = `"${item.note}"`;
+        info.append(note);
+      }
+
+      link.append(img, info);
+      wrapper.append(link);
+
+      if (giftMode) {
+        const claim = document.createElement('div');
+        claim.className = 'claim';
+        renderClaim(claim, item);
+        wrapper.append(claim);
+      }
+
+      return wrapper;
+    }
+
+    function renderClaim(claim, item) {
+      claim.innerHTML = '';
+      if (item.claimed_by) {
+        const claimed = document.createElement('div');
+        claimed.className = 'claimed';
+        const text = document.createElement('span');
+        text.innerHTML = `✓ <strong>${item.claimed_by}</strong> is getting this`;
+        const undo = document.createElement('button');
+        undo.className = 'undo';
+        undo.textContent = 'Undo';
+        undo.addEventListener('click', async () => {
+          try {
+            await supabaseFetch(`items?id=eq.${item.id}`, {
+              method: 'PATCH',
+              headers: { Prefer: 'return=minimal' },
+              body: JSON.stringify({ claimed_by: null }),
+            });
+            item.claimed_by = null;
+            renderClaim(claim, item);
+          } catch (err) {
+            alert(`Couldn't undo: ${err.message}`);
+          }
+        });
+        claimed.append(text, undo);
+        claim.append(claimed);
+      } else {
+        const btn = document.createElement('button');
+        btn.className = 'claim-btn';
+        btn.textContent = "I'm getting this";
+        btn.addEventListener('click', () => {
+          claim.innerHTML = '';
+          const form = document.createElement('div');
+          form.className = 'claim-form';
+          const input = document.createElement('input');
+          input.placeholder = 'Your name (optional)';
+          const confirm = document.createElement('button');
+          confirm.textContent = 'Confirm';
+          confirm.addEventListener('click', async () => {
+            const claimedBy = input.value.trim() || 'Someone';
+            try {
+              await supabaseFetch(`items?id=eq.${item.id}`, {
+                method: 'PATCH',
+                headers: { Prefer: 'return=minimal' },
+                body: JSON.stringify({ claimed_by: claimedBy }),
+              });
+              item.claimed_by = claimedBy;
+              renderClaim(claim, item);
+            } catch (err) {
+              alert(`Couldn't save: ${err.message}`);
+            }
+          });
+          form.append(input, confirm);
+          claim.append(form);
+        });
+        claim.append(btn);
+      }
+    }
+
     async function loadWardrobe() {
       const params = new URLSearchParams(location.search);
       const wardrobeId = params.get('w');
+      const giftTokenParam = params.get('g');
 
       if (!wardrobeId) {
         document.getElementById('error').hidden = false;
@@ -80,15 +242,25 @@
       }
 
       let items;
+      let giftMode = false;
       try {
-        const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/wardrobes?id=eq.${encodeURIComponent(wardrobeId)}&select=name,items(*)&items.order=created_at.desc`,
-          { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+        // The plain link never even requests claim data — it's not just hidden in the UI,
+        // it never crosses the wire unless you're on the gift-coordination link.
+        const fields = giftTokenParam
+          ? 'name,gift_token,items(*)'
+          : 'name,items(id,title,price,image,url,site,size,note,created_at)';
+
+        const rows = await supabaseFetch(
+          `wardrobes?id=eq.${encodeURIComponent(wardrobeId)}&select=${fields}&items.order=created_at.desc`
         );
-        if (!res.ok) throw new Error(`Request failed (${res.status})`);
-        const rows = await res.json();
-        const wardrobe = rows[0];
+        const wardrobe = rows?.[0];
         items = wardrobe?.items || [];
+
+        if (giftTokenParam && wardrobe?.gift_token === giftTokenParam) {
+          giftMode = true;
+          document.getElementById('giftBanner').hidden = false;
+        }
+
         if (wardrobe?.name) {
           document.getElementById('heading').textContent = wardrobe.name;
           document.getElementById('eyebrow').hidden = false;
@@ -106,56 +278,7 @@
 
       const list = document.getElementById('list');
       items.forEach((item) => {
-        const a = document.createElement('a');
-        a.className = 'item';
-        a.href = item.url || '#';
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-
-        const img = document.createElement('img');
-        img.src = item.image || '';
-        img.alt = item.title || '';
-
-        const info = document.createElement('div');
-        info.className = 'info';
-
-        const name = document.createElement('div');
-        name.className = 'name';
-        name.textContent = item.title || '(untitled)';
-
-        const row = document.createElement('div');
-        row.className = 'row';
-        if (item.size) {
-          const sizePill = document.createElement('span');
-          sizePill.className = 'pill accent';
-          sizePill.textContent = `Size ${item.size}`;
-          row.append(sizePill);
-        }
-        if (item.site) {
-          const sitePill = document.createElement('span');
-          sitePill.className = 'pill';
-          sitePill.textContent = item.site.replace(/^www\./, '');
-          row.append(sitePill);
-        }
-
-        info.append(name, row);
-
-        if (item.price) {
-          const price = document.createElement('div');
-          price.className = 'price';
-          price.textContent = item.price;
-          info.append(price);
-        }
-
-        if (item.note) {
-          const note = document.createElement('div');
-          note.className = 'note';
-          note.textContent = `"${item.note}"`;
-          info.append(note);
-        }
-
-        a.append(img, info);
-        list.appendChild(a);
+        list.appendChild(renderItem(item, giftMode));
       });
     }
 
