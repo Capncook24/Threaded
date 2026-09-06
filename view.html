@@ -2,24 +2,100 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Wardrobe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;1,500&family=Work+Sans:wght@400;500;600&display=swap">
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 16px; }
-    h1 { font-size: 20px; }
-    #list { list-style: none; margin: 0; padding: 0; }
-    #list li { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid #eee; }
-    #list img { width: 90px; height: 90px; object-fit: cover; border-radius: 6px; background: #eee; flex-shrink: 0; }
-    #list .title { font-weight: 600; }
-    #list .meta { color: #666; font-size: 14px; margin-top: 4px; }
-    #list a { color: inherit; }
-    #empty, #error { color: #888; }
+    :root{
+      --bg:#FBFAF7;
+      --ink:#241C15;
+      --muted:#8C7F6E;
+      --rail-light:#F1D9A6;
+      --rail-mid:#B08D57;
+      --rail-dark:#8A6A3C;
+      --tag-bg:#EFE6D0;
+      --tag-ink:#2B2320;
+      --thread:#8B3A2E;
+      --hook:#B7935B;
+    }
+    *{box-sizing:border-box;}
+    body{
+      background:var(--bg);color:var(--ink);
+      font-family:"Work Sans",system-ui,sans-serif;
+      margin:0;padding:36px 0 64px;
+    }
+    .eyebrow{
+      text-align:center;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+      color:var(--muted);margin-bottom:2px;
+    }
+    h1{
+      text-align:center;font-family:"Fraunces",serif;font-style:italic;font-weight:500;
+      font-size:28px;margin:0 0 32px;
+    }
+    .rail-wrap{padding:0 24px;margin-bottom:6px;max-width:900px;margin-left:auto;margin-right:auto;}
+    .rail{
+      height:6px;border-radius:3px;
+      background:linear-gradient(180deg,var(--rail-light),var(--rail-mid) 45%,var(--rail-dark));
+      box-shadow:0 1px 0 rgba(255,255,255,.5) inset, 0 2px 5px rgba(139,106,60,.35);
+      position:relative;
+    }
+    .rail::before,.rail::after{
+      content:"";position:absolute;top:-6px;width:18px;height:18px;border-radius:50%;
+      background:radial-gradient(circle at 35% 30%, #FBE9C4, var(--rail-mid) 70%);
+      box-shadow:0 2px 4px rgba(139,106,60,.4);
+    }
+    .rail::before{left:-6px;}
+    .rail::after{right:-6px;}
+
+    .scroll{
+      display:flex;overflow-x:auto;padding:34px 32px 24px 44px;gap:0;
+      -webkit-overflow-scrolling:touch;
+    }
+    .item{
+      flex:0 0 auto;width:172px;margin-right:-8px;position:relative;
+      display:flex;flex-direction:column;align-items:center;text-decoration:none;color:inherit;
+      padding-bottom:6px;
+    }
+    .item:nth-child(2n){transform:translateY(12px) rotate(1.8deg);}
+    .item:nth-child(2n+1){transform:translateY(0) rotate(-2.1deg);}
+    .hook{width:2px;height:22px;background:var(--hook);margin-bottom:-2px;border-radius:0 0 2px 2px;}
+    .photo{
+      width:172px;height:222px;object-fit:cover;border-radius:3px;
+      background:#EDEAE2;
+      box-shadow:0 16px 24px -12px rgba(60,45,25,.35), 0 2px 5px rgba(60,45,25,.18);
+    }
+    .tag{
+      margin-top:12px;background:var(--tag-bg);color:var(--tag-ink);
+      padding:8px 11px;border-radius:2px;
+      box-shadow:0 4px 8px rgba(60,45,25,.2);font-size:11px;line-height:1.4;
+      text-align:center;position:relative;width:148px;
+    }
+    .tag::before{
+      content:"";position:absolute;top:-10px;left:50%;transform:translateX(-50%);
+      width:1px;height:10px;background:var(--thread);
+    }
+    .tag .name{
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+      font-family:"Fraunces",serif;font-size:12.5px;font-weight:500;
+      margin-bottom:4px;color:var(--tag-ink);overflow:hidden;
+    }
+    .tag .meta{display:block;letter-spacing:.02em;color:var(--muted);font-size:10px;line-height:1.5;}
+
+    #empty,#error{
+      text-align:center;color:var(--muted);font-size:14px;padding:60px 20px;
+    }
+    #error{color:var(--thread);}
   </style>
 </head>
 <body>
-  <h1 id="heading">Wardrobe</h1>
+  <div class="eyebrow" id="eyebrow" hidden>A wardrobe from</div>
+  <h1>Wardrobe</h1>
+  <div class="rail-wrap"><div class="rail"></div></div>
   <div id="empty" hidden>No items saved yet.</div>
   <div id="error" hidden></div>
-  <ul id="list"></ul>
+  <div class="scroll" id="scroll"></div>
 
   <script>
     const SUPABASE_URL = 'https://dsgjgnutkrwfgnrhfvnb.supabase.co';
@@ -54,30 +130,38 @@
         return;
       }
 
-      const list = document.getElementById('list');
+      const scroll = document.getElementById('scroll');
       items.forEach((item) => {
-        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.className = 'item';
+        a.href = item.url || '#';
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+
+        const hook = document.createElement('div');
+        hook.className = 'hook';
 
         const img = document.createElement('img');
+        img.className = 'photo';
         img.src = item.image || '';
-        img.alt = '';
+        img.alt = item.title || '';
 
-        const details = document.createElement('div');
-        const title = document.createElement('div');
-        title.className = 'title';
-        title.textContent = item.title || '(untitled)';
-        const meta = document.createElement('div');
+        const tag = document.createElement('div');
+        tag.className = 'tag';
+        const name = document.createElement('span');
+        name.className = 'name';
+        name.textContent = item.title || '(untitled)';
+        const meta = document.createElement('span');
         meta.className = 'meta';
-        meta.textContent = [item.price, item.size ? `Size ${item.size}` : null, item.site].filter(Boolean).join(' · ');
-        const link = document.createElement('a');
-        link.href = item.url || '#';
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.textContent = 'View item →';
+        meta.textContent = [
+          item.size ? `SIZE ${item.size}` : null,
+          item.price,
+          item.site,
+        ].filter(Boolean).join(' · ');
+        tag.append(name, meta);
 
-        details.append(title, meta, document.createElement('br'), link);
-        li.append(img, details);
-        list.appendChild(li);
+        a.append(hook, img, tag);
+        scroll.appendChild(a);
       });
     }
 
