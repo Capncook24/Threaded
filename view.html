@@ -46,6 +46,11 @@
       background:var(--pill-bg);color:var(--pill-ink);border:none;cursor:pointer;font-family:inherit;
     }
     .tab.active{background:var(--accent-ink);color:#fff;}
+    .my-hint{font-size:12px;color:var(--muted);margin:-8px 0 20px;}
+    .my-hint-link{
+      font-size:12px;font-weight:600;color:var(--accent-ink);background:none;border:none;
+      padding:0;cursor:pointer;text-decoration:underline;font-family:inherit;
+    }
     .item{padding:20px 0;border-top:1px solid var(--line);}
     .item:first-of-type{border-top:none;}
     .item-link{
@@ -93,6 +98,7 @@
     <h1 id="heading">Wardrobe</h1>
     <div class="gift-banner" id="giftBanner" hidden>You're viewing the gift-coordination link — you can mark items you're getting.</div>
     <div class="tabs" id="tabs" hidden></div>
+    <div id="myHint"></div>
     <div id="empty" hidden>No items saved yet.</div>
     <div id="error" hidden></div>
     <div id="list"></div>
@@ -249,23 +255,67 @@
       });
     }
 
-    async function loadFamily(familyId, giftTokenParam) {
-      let family;
-      let giftMode = false;
+    function getMyWardrobeId(familyId) {
       try {
-        const fields = giftTokenParam
-          ? 'gift_token,wardrobes(id,name,items(*))'
-          : 'wardrobes(id,name,items(id,title,price,image,url,site,size,note,created_at))';
+        return localStorage.getItem(`threaded_my_wardrobe_${familyId}`);
+      } catch (err) {
+        return null;
+      }
+    }
 
+    function setMyWardrobeId(familyId, wardrobeId) {
+      try {
+        if (wardrobeId) {
+          localStorage.setItem(`threaded_my_wardrobe_${familyId}`, wardrobeId);
+        } else {
+          localStorage.removeItem(`threaded_my_wardrobe_${familyId}`);
+        }
+      } catch (err) {
+        // If storage is unavailable, the hint just won't persist across visits — not fatal.
+      }
+    }
+
+    function renderMyHint(hintEl, member, isMine, configured, familyId, onChange) {
+      hintEl.innerHTML = '';
+      // Once someone's tab is configured, every other tab just shows claiming normally —
+      // nothing left to configure there.
+      if (configured && !isMine) return;
+
+      if (isMine) {
+        const p = document.createElement('p');
+        p.className = 'my-hint';
+        p.textContent = "This is your own list — claims are hidden here so nothing's spoiled. ";
+        const reset = document.createElement('button');
+        reset.className = 'my-hint-link';
+        reset.textContent = "Not you?";
+        reset.addEventListener('click', () => {
+          setMyWardrobeId(familyId, null);
+          onChange();
+        });
+        p.append(reset);
+        hintEl.append(p);
+      } else {
+        const p = document.createElement('p');
+        p.className = 'my-hint';
+        const link = document.createElement('button');
+        link.className = 'my-hint-link';
+        link.textContent = 'Is this your wardrobe? Hide my surprises here';
+        link.addEventListener('click', () => {
+          setMyWardrobeId(familyId, member.id);
+          onChange();
+        });
+        p.append(link);
+        hintEl.append(p);
+      }
+    }
+
+    async function loadFamily(familyId) {
+      let family;
+      try {
         const rows = await supabaseFetch(
-          `families?id=eq.${encodeURIComponent(familyId)}&select=${fields}&wardrobes.items.order=created_at.desc`
+          `families?id=eq.${encodeURIComponent(familyId)}&select=wardrobes(id,name,items(*))&wardrobes.items.order=created_at.desc`
         );
         family = rows?.[0];
-
-        if (giftTokenParam && family?.gift_token === giftTokenParam) {
-          giftMode = true;
-          document.getElementById('giftBanner').hidden = false;
-        }
       } catch (err) {
         document.getElementById('error').hidden = false;
         document.getElementById('error').textContent = `Couldn't load this family: ${err.message}`;
@@ -283,8 +333,29 @@
       document.getElementById('eyebrow').textContent = 'Family wardrobe';
       document.getElementById('heading').textContent = 'Wardrobes';
 
+      const banner = document.getElementById('giftBanner');
+      banner.hidden = false;
+
       const tabs = document.getElementById('tabs');
+      const hint = document.getElementById('myHint');
       tabs.hidden = false;
+
+      // Nobody sees any claim info until *someone* on this device has marked which
+      // tab is theirs — so a first-ever visit can never accidentally spoil anything.
+      // Once marked, that one tab stays safe forever here while every other tab
+      // shows full claiming — one link serves both the owner and gift-buyers.
+      const showTab = (member) => {
+        const myWardrobeId = getMyWardrobeId(familyId);
+        banner.textContent = myWardrobeId
+          ? "Your own tab is hidden from claims on this device. Everyone else's tabs show what's already claimed."
+          : "Tap your own name below, then \"hide my surprises,\" so claiming works for everyone else without spoiling yours.";
+        const configured = myWardrobeId !== null;
+        const isMine = member.id === myWardrobeId;
+        const tabGiftMode = configured && !isMine;
+        renderList(member.items || [], tabGiftMode);
+        renderMyHint(hint, member, isMine, configured, familyId, () => showTab(member));
+      };
+
       members.forEach((member, i) => {
         const tab = document.createElement('button');
         tab.className = 'tab' + (i === 0 ? ' active' : '');
@@ -292,12 +363,12 @@
         tab.addEventListener('click', () => {
           tabs.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
           tab.classList.add('active');
-          renderList(member.items || [], giftMode);
+          showTab(member);
         });
         tabs.appendChild(tab);
       });
 
-      renderList(members[0].items || [], giftMode);
+      showTab(members[0]);
     }
 
     async function loadWardrobe() {
@@ -356,7 +427,7 @@
       const params = new URLSearchParams(location.search);
       const familyId = params.get('fam');
       if (familyId) {
-        loadFamily(familyId, params.get('g'));
+        loadFamily(familyId);
       } else {
         loadWardrobe();
       }
