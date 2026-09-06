@@ -37,6 +37,15 @@
       font-size:12px;color:var(--accent-ink);background:var(--accent-bg);
       padding:8px 12px;border-radius:10px;margin-bottom:24px;
     }
+    .tabs{
+      display:flex;gap:8px;overflow-x:auto;margin-bottom:24px;padding-bottom:2px;
+      -webkit-overflow-scrolling:touch;
+    }
+    .tab{
+      flex:0 0 auto;font-size:13px;font-weight:600;padding:8px 16px;border-radius:20px;
+      background:var(--pill-bg);color:var(--pill-ink);border:none;cursor:pointer;font-family:inherit;
+    }
+    .tab.active{background:var(--accent-ink);color:#fff;}
     .item{padding:20px 0;border-top:1px solid var(--line);}
     .item:first-of-type{border-top:none;}
     .item-link{
@@ -83,6 +92,7 @@
     <div class="eyebrow" id="eyebrow" hidden>Wardrobe</div>
     <h1 id="heading">Wardrobe</h1>
     <div class="gift-banner" id="giftBanner" hidden>You're viewing the gift-coordination link — you can mark items you're getting.</div>
+    <div class="tabs" id="tabs" hidden></div>
     <div id="empty" hidden>No items saved yet.</div>
     <div id="error" hidden></div>
     <div id="list"></div>
@@ -230,6 +240,66 @@
       }
     }
 
+    function renderList(items, giftMode) {
+      const list = document.getElementById('list');
+      list.innerHTML = '';
+      document.getElementById('empty').hidden = items.length > 0;
+      items.forEach((item) => {
+        list.appendChild(renderItem(item, giftMode));
+      });
+    }
+
+    async function loadFamily(familyId, giftTokenParam) {
+      let family;
+      let giftMode = false;
+      try {
+        const fields = giftTokenParam
+          ? 'gift_token,wardrobes(id,name,items(*))'
+          : 'wardrobes(id,name,items(id,title,price,image,url,site,size,note,created_at))';
+
+        const rows = await supabaseFetch(
+          `families?id=eq.${encodeURIComponent(familyId)}&select=${fields}&wardrobes.items.order=created_at.desc`
+        );
+        family = rows?.[0];
+
+        if (giftTokenParam && family?.gift_token === giftTokenParam) {
+          giftMode = true;
+          document.getElementById('giftBanner').hidden = false;
+        }
+      } catch (err) {
+        document.getElementById('error').hidden = false;
+        document.getElementById('error').textContent = `Couldn't load this family: ${err.message}`;
+        return;
+      }
+
+      const members = family?.wardrobes || [];
+      if (members.length === 0) {
+        document.getElementById('error').hidden = false;
+        document.getElementById('error').textContent = 'No family found for this link.';
+        return;
+      }
+
+      document.getElementById('eyebrow').hidden = false;
+      document.getElementById('eyebrow').textContent = 'Family wardrobe';
+      document.getElementById('heading').textContent = 'Wardrobes';
+
+      const tabs = document.getElementById('tabs');
+      tabs.hidden = false;
+      members.forEach((member, i) => {
+        const tab = document.createElement('button');
+        tab.className = 'tab' + (i === 0 ? ' active' : '');
+        tab.textContent = member.name || 'Unnamed';
+        tab.addEventListener('click', () => {
+          tabs.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
+          tab.classList.add('active');
+          renderList(member.items || [], giftMode);
+        });
+        tabs.appendChild(tab);
+      });
+
+      renderList(members[0].items || [], giftMode);
+    }
+
     async function loadWardrobe() {
       const params = new URLSearchParams(location.search);
       const wardrobeId = params.get('w');
@@ -237,7 +307,7 @@
 
       if (!wardrobeId) {
         document.getElementById('error').hidden = false;
-        document.getElementById('error').textContent = 'No wardrobe specified in the link.';
+        document.getElementById('error').textContent = 'No wardrobe or family specified in the link.';
         return;
       }
 
@@ -282,7 +352,15 @@
       });
     }
 
-    loadWardrobe();
+    (function start() {
+      const params = new URLSearchParams(location.search);
+      const familyId = params.get('fam');
+      if (familyId) {
+        loadFamily(familyId, params.get('g'));
+      } else {
+        loadWardrobe();
+      }
+    })();
   </script>
 </body>
 </html>
