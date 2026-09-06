@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Wardrobe</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 16px; }
+    h1 { font-size: 20px; }
+    #list { list-style: none; margin: 0; padding: 0; }
+    #list li { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid #eee; }
+    #list img { width: 90px; height: 90px; object-fit: cover; border-radius: 6px; background: #eee; flex-shrink: 0; }
+    #list .title { font-weight: 600; }
+    #list .meta { color: #666; font-size: 14px; margin-top: 4px; }
+    #list a { color: inherit; }
+    #empty, #error { color: #888; }
+  </style>
+</head>
+<body>
+  <h1 id="heading">Wardrobe</h1>
+  <div id="empty" hidden>No items saved yet.</div>
+  <div id="error" hidden></div>
+  <ul id="list"></ul>
+
+  <script>
+    const SUPABASE_URL = 'https://dsgjgnutkrwfgnrhfvnb.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_YIbIGsNUjfdO1zI2PGoMUA_o8M4ahtn';
+
+    async function loadWardrobe() {
+      const params = new URLSearchParams(location.search);
+      const wardrobeId = params.get('w');
+
+      if (!wardrobeId) {
+        document.getElementById('error').hidden = false;
+        document.getElementById('error').textContent = 'No wardrobe specified in the link.';
+        return;
+      }
+
+      let items;
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/items?wardrobe_id=eq.${encodeURIComponent(wardrobeId)}&select=*&order=created_at.desc`,
+          { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+        );
+        if (!res.ok) throw new Error(`Request failed (${res.status})`);
+        items = await res.json();
+      } catch (err) {
+        document.getElementById('error').hidden = false;
+        document.getElementById('error').textContent = `Couldn't load this wardrobe: ${err.message}`;
+        return;
+      }
+
+      if (items.length === 0) {
+        document.getElementById('empty').hidden = false;
+        return;
+      }
+
+      const list = document.getElementById('list');
+      items.forEach((item) => {
+        const li = document.createElement('li');
+
+        const img = document.createElement('img');
+        img.src = item.image || '';
+        img.alt = '';
+
+        const details = document.createElement('div');
+        const title = document.createElement('div');
+        title.className = 'title';
+        title.textContent = item.title || '(untitled)';
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = [item.price, item.size ? `Size ${item.size}` : null, item.site].filter(Boolean).join(' · ');
+        const link = document.createElement('a');
+        link.href = item.url || '#';
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = 'View item →';
+
+        details.append(title, meta, document.createElement('br'), link);
+        li.append(img, details);
+        list.appendChild(li);
+      });
+    }
+
+    loadWardrobe();
+  </script>
+</body>
+</html>
