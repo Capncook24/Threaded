@@ -6,96 +6,64 @@
   <title>Wardrobe</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;1,500&family=Work+Sans:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600&display=swap">
   <style>
     :root{
-      --bg:#FBFAF7;
-      --ink:#241C15;
-      --muted:#8C7F6E;
-      --rail-light:#F1D9A6;
-      --rail-mid:#B08D57;
-      --rail-dark:#8A6A3C;
-      --tag-bg:#EFE6D0;
-      --tag-ink:#2B2320;
-      --thread:#8B3A2E;
-      --hook:#B7935B;
+      --bg:#FFFFFF;
+      --ink:#111111;
+      --muted:#8A8A8A;
+      --line:#ECECEC;
+      --pill-bg:#F1F1F1;
+      --pill-ink:#444444;
+      --accent-bg:#EBEEFC;
+      --accent-ink:#3452E1;
     }
     *{box-sizing:border-box;}
     body{
       background:var(--bg);color:var(--ink);
-      font-family:"Work Sans",system-ui,sans-serif;
-      margin:0;padding:36px 0 64px;
+      font-family:"Instrument Sans",system-ui,sans-serif;
+      margin:0;padding:32px 20px 72px;
     }
+    .wrap{max-width:520px;margin:0 auto;}
     .eyebrow{
-      text-align:center;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
-      color:var(--muted);margin-bottom:2px;
+      font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+      color:var(--muted);margin-bottom:6px;
     }
     h1{
-      text-align:center;font-family:"Fraunces",serif;font-style:italic;font-weight:500;
-      font-size:28px;margin:0 0 32px;
-    }
-    .rail-wrap{padding:0 24px;margin-bottom:6px;max-width:900px;margin-left:auto;margin-right:auto;}
-    .rail{
-      height:6px;border-radius:3px;
-      background:linear-gradient(180deg,var(--rail-light),var(--rail-mid) 45%,var(--rail-dark));
-      box-shadow:0 1px 0 rgba(255,255,255,.5) inset, 0 2px 5px rgba(139,106,60,.35);
-      position:relative;
-    }
-    .rail::before,.rail::after{
-      content:"";position:absolute;top:-6px;width:18px;height:18px;border-radius:50%;
-      background:radial-gradient(circle at 35% 30%, #FBE9C4, var(--rail-mid) 70%);
-      box-shadow:0 2px 4px rgba(139,106,60,.4);
-    }
-    .rail::before{left:-6px;}
-    .rail::after{right:-6px;}
-
-    .scroll{
-      display:flex;overflow-x:auto;padding:34px 32px 24px 44px;gap:0;
-      -webkit-overflow-scrolling:touch;
+      font-family:"Bricolage Grotesque",sans-serif;font-weight:700;
+      font-size:26px;letter-spacing:-.01em;line-height:1.2;margin:0 0 28px;
     }
     .item{
-      flex:0 0 auto;width:172px;margin-right:-8px;position:relative;
-      display:flex;flex-direction:column;align-items:center;text-decoration:none;color:inherit;
-      padding-bottom:6px;
+      display:flex;gap:16px;padding:20px 0;border-top:1px solid var(--line);
+      align-items:flex-start;text-decoration:none;color:inherit;
     }
-    .item:nth-child(2n){transform:translateY(12px) rotate(1.8deg);}
-    .item:nth-child(2n+1){transform:translateY(0) rotate(-2.1deg);}
-    .hook{width:2px;height:22px;background:var(--hook);margin-bottom:-2px;border-radius:0 0 2px 2px;}
-    .photo{
-      width:172px;height:222px;object-fit:cover;border-radius:3px;
-      background:#EDEAE2;
-      box-shadow:0 16px 24px -12px rgba(60,45,25,.35), 0 2px 5px rgba(60,45,25,.18);
+    .item:first-of-type{border-top:none;}
+    .item img{
+      width:92px;height:118px;object-fit:cover;border-radius:12px;
+      background:var(--pill-bg);flex-shrink:0;
     }
-    .tag{
-      margin-top:12px;background:var(--tag-bg);color:var(--tag-ink);
-      padding:8px 11px;border-radius:2px;
-      box-shadow:0 4px 8px rgba(60,45,25,.2);font-size:11px;line-height:1.4;
-      text-align:center;position:relative;width:148px;
-    }
-    .tag::before{
-      content:"";position:absolute;top:-10px;left:50%;transform:translateX(-50%);
-      width:1px;height:10px;background:var(--thread);
-    }
-    .tag .name{
-      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
-      font-family:"Fraunces",serif;font-size:12.5px;font-weight:500;
-      margin-bottom:4px;color:var(--tag-ink);overflow:hidden;
-    }
-    .tag .meta{display:block;letter-spacing:.02em;color:var(--muted);font-size:10px;line-height:1.5;}
+    .info{min-width:0;padding-top:2px;}
+    .name{font-weight:600;font-size:14px;line-height:1.35;margin-bottom:8px;}
+    .row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+    .pill{font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;background:var(--pill-bg);color:var(--pill-ink);}
+    .pill.accent{background:var(--accent-bg);color:var(--accent-ink);}
+    .price{font-size:13px;color:var(--ink);font-weight:600;}
+    .note{font-size:12.5px;color:var(--accent-ink);margin-top:8px;font-style:italic;}
 
     #empty,#error{
       text-align:center;color:var(--muted);font-size:14px;padding:60px 20px;
     }
-    #error{color:var(--thread);}
+    #error{color:#C0392B;}
   </style>
 </head>
 <body>
-  <div class="eyebrow" id="eyebrow" hidden>A wardrobe from</div>
-  <h1>Wardrobe</h1>
-  <div class="rail-wrap"><div class="rail"></div></div>
-  <div id="empty" hidden>No items saved yet.</div>
-  <div id="error" hidden></div>
-  <div class="scroll" id="scroll"></div>
+  <div class="wrap">
+    <div class="eyebrow" id="eyebrow" hidden>Wardrobe</div>
+    <h1 id="heading">Wardrobe</h1>
+    <div id="empty" hidden>No items saved yet.</div>
+    <div id="error" hidden></div>
+    <div id="list"></div>
+  </div>
 
   <script>
     const SUPABASE_URL = 'https://dsgjgnutkrwfgnrhfvnb.supabase.co';
@@ -114,11 +82,17 @@
       let items;
       try {
         const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/items?wardrobe_id=eq.${encodeURIComponent(wardrobeId)}&select=*&order=created_at.desc`,
+          `${SUPABASE_URL}/rest/v1/wardrobes?id=eq.${encodeURIComponent(wardrobeId)}&select=name,items(*)&items.order=created_at.desc`,
           { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
         );
         if (!res.ok) throw new Error(`Request failed (${res.status})`);
-        items = await res.json();
+        const rows = await res.json();
+        const wardrobe = rows[0];
+        items = wardrobe?.items || [];
+        if (wardrobe?.name) {
+          document.getElementById('heading').textContent = wardrobe.name;
+          document.getElementById('eyebrow').hidden = false;
+        }
       } catch (err) {
         document.getElementById('error').hidden = false;
         document.getElementById('error').textContent = `Couldn't load this wardrobe: ${err.message}`;
@@ -130,7 +104,7 @@
         return;
       }
 
-      const scroll = document.getElementById('scroll');
+      const list = document.getElementById('list');
       items.forEach((item) => {
         const a = document.createElement('a');
         a.className = 'item';
@@ -138,30 +112,50 @@
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
 
-        const hook = document.createElement('div');
-        hook.className = 'hook';
-
         const img = document.createElement('img');
-        img.className = 'photo';
         img.src = item.image || '';
         img.alt = item.title || '';
 
-        const tag = document.createElement('div');
-        tag.className = 'tag';
-        const name = document.createElement('span');
+        const info = document.createElement('div');
+        info.className = 'info';
+
+        const name = document.createElement('div');
         name.className = 'name';
         name.textContent = item.title || '(untitled)';
-        const meta = document.createElement('span');
-        meta.className = 'meta';
-        meta.textContent = [
-          item.size ? `SIZE ${item.size}` : null,
-          item.price,
-          item.site,
-        ].filter(Boolean).join(' · ');
-        tag.append(name, meta);
 
-        a.append(hook, img, tag);
-        scroll.appendChild(a);
+        const row = document.createElement('div');
+        row.className = 'row';
+        if (item.size) {
+          const sizePill = document.createElement('span');
+          sizePill.className = 'pill accent';
+          sizePill.textContent = `Size ${item.size}`;
+          row.append(sizePill);
+        }
+        if (item.site) {
+          const sitePill = document.createElement('span');
+          sitePill.className = 'pill';
+          sitePill.textContent = item.site.replace(/^www\./, '');
+          row.append(sitePill);
+        }
+
+        info.append(name, row);
+
+        if (item.price) {
+          const price = document.createElement('div');
+          price.className = 'price';
+          price.textContent = item.price;
+          info.append(price);
+        }
+
+        if (item.note) {
+          const note = document.createElement('div');
+          note.className = 'note';
+          note.textContent = `"${item.note}"`;
+          info.append(note);
+        }
+
+        a.append(img, info);
+        list.appendChild(a);
       });
     }
 
