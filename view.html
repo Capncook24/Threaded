@@ -349,22 +349,14 @@
         return;
       }
 
-      // A wardrobe with nobody else in it yet is just... a wardrobe. No tabs, no
-      // claim mechanics to explain — those only start to matter once someone joins.
-      if (members.length === 1) {
-        const solo = members[0];
-        if (solo.name) {
-          document.getElementById('heading').textContent = solo.name;
-          document.getElementById('eyebrow').hidden = false;
-          document.getElementById('eyebrow').textContent = 'Wardrobe';
-        }
-        renderList(solo.items || [], false);
-        return;
-      }
+      // Whether there's one wardrobe here or several, the same question and the same
+      // claim mechanics apply — a lone wardrobe still needs to hide claims from its own
+      // owner if they open their own link. Only the tab bar is specific to a group.
+      const isGroup = members.length > 1;
 
-      document.getElementById('eyebrow').hidden = false;
-      document.getElementById('eyebrow').textContent = 'Family wardrobe';
-      document.getElementById('heading').textContent = 'Wardrobes';
+      document.getElementById('eyebrow').hidden = !isGroup && !members[0].name;
+      document.getElementById('eyebrow').textContent = isGroup ? 'Family wardrobe' : 'Wardrobe';
+      document.getElementById('heading').textContent = isGroup ? 'Wardrobes' : (members[0].name || 'Wardrobe');
 
       const banner = document.getElementById('giftBanner');
       const whoGate = document.getElementById('whoGate');
@@ -374,22 +366,34 @@
       const hint = document.getElementById('myHint');
 
       // "none" is a real, stored answer distinct from "not answered yet" (null) — it
-      // means a viewer confirmed they don't own any wardrobe here, so every tab should
-      // just show claiming normally for them, with nothing of their own to protect.
+      // means a viewer confirmed they don't own any wardrobe here, so claiming should
+      // just work normally for them, with nothing of their own to protect.
       const showTab = (member) => {
         const myWardrobeId = getMyWardrobeId(familyId);
-        banner.hidden = false;
-        banner.textContent = myWardrobeId === 'none'
-          ? "You're not one of the people on this list, so claiming works normally on every tab."
-          : "Your own tab is hidden from claims on this device. Everyone else's tabs show what's already claimed.";
         const isMine = member.id === myWardrobeId;
+        banner.hidden = false;
+        if (myWardrobeId === 'none') {
+          banner.textContent = isGroup
+            ? "You're not one of the people on this list, so claiming works normally on every tab."
+            : "Tap \"I'm getting this\" on anything you plan to get.";
+        } else {
+          banner.textContent = isGroup
+            ? "Your own tab is hidden from claims on this device. Everyone else's tabs show what's already claimed."
+            : "This link is yours — claims are hidden here so nothing's spoiled for you.";
+        }
         const tabGiftMode = myWardrobeId !== null && !isMine;
         renderList(member.items || [], tabGiftMode);
         renderMyHint(hint, member, isMine, myWardrobeId !== null, familyId, () => showTab(member));
       };
 
-      const renderTabsView = () => {
+      const renderMainView = () => {
         whoGate.hidden = true;
+        if (!isGroup) {
+          tabs.hidden = true;
+          showTab(members[0]);
+          return;
+        }
+
         tabs.hidden = false;
         tabs.innerHTML = '';
 
@@ -412,27 +416,47 @@
         showTab(members[defaultIndex]);
       };
 
-      // First-ever visit on this device: ask up front which wardrobe is theirs (or
-      // confirm they have none) before showing any tabs or items — so nobody can land
-      // on a tab, see nothing, and wonder where claiming went.
+      // First-ever visit on this device: ask up front whether this wardrobe (or, for a
+      // group, which one) is theirs — before showing any items — so nobody can land on
+      // a list, see nothing, and wonder where claiming went.
       if (getMyWardrobeId(familyId) === null) {
         whoGate.hidden = false;
         whoOptions.innerHTML = '';
-        members.forEach((member) => {
-          const btn = document.createElement('button');
-          btn.textContent = member.name || 'Unnamed';
-          btn.addEventListener('click', () => {
-            setMyWardrobeId(familyId, member.id);
-            renderTabsView();
+        const gateQ = whoGate.querySelector('.who-gate-q');
+        const gateSub = whoGate.querySelector('.who-gate-sub');
+
+        if (isGroup) {
+          gateQ.textContent = 'Which wardrobe is yours?';
+          gateSub.textContent = "So we can hide your own surprises and show you everyone else's.";
+          members.forEach((member) => {
+            const btn = document.createElement('button');
+            btn.textContent = member.name || 'Unnamed';
+            btn.addEventListener('click', () => {
+              setMyWardrobeId(familyId, member.id);
+              renderMainView();
+            });
+            whoOptions.appendChild(btn);
           });
-          whoOptions.appendChild(btn);
-        });
+          whoNoneBtn.textContent = "I'm not on this list — I'm just here to get someone a gift";
+        } else {
+          gateQ.textContent = 'Is this your own wardrobe?';
+          gateSub.textContent = "So we know whether to show you what's already claimed.";
+          const yesBtn = document.createElement('button');
+          yesBtn.textContent = "Yes, it's mine";
+          yesBtn.addEventListener('click', () => {
+            setMyWardrobeId(familyId, members[0].id);
+            renderMainView();
+          });
+          whoOptions.appendChild(yesBtn);
+          whoNoneBtn.textContent = "No — I'm here to get a gift";
+        }
+
         whoNoneBtn.onclick = () => {
           setMyWardrobeId(familyId, 'none');
-          renderTabsView();
+          renderMainView();
         };
       } else {
-        renderTabsView();
+        renderMainView();
       }
     }
 
