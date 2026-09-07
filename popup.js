@@ -234,7 +234,7 @@ async function renderSavedList() {
   try {
     const wardrobeId = await getOrCreateWardrobeId();
     items = await supabaseFetch(
-      `items?wardrobe_id=eq.${wardrobeId}&select=*&order=created_at.desc`
+      `items?wardrobe_id=eq.${wardrobeId}&select=*&order=priority.desc,created_at.desc`
     );
   } catch (err) {
     status.textContent = `Couldn't load saved items: ${err.message}`;
@@ -252,6 +252,23 @@ async function renderSavedList() {
 
     const img = document.createElement('img');
     img.src = item.image || '';
+
+    const star = document.createElement('span');
+    star.className = 'star';
+    star.textContent = item.priority ? '★' : '☆';
+    star.title = item.priority ? 'Really want this — click to unmark' : 'Mark as really want this';
+    star.addEventListener('click', async () => {
+      try {
+        await supabaseFetch(`items?id=eq.${item.id}`, {
+          method: 'PATCH',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({ priority: !item.priority }),
+        });
+        renderSavedList();
+      } catch (err) {
+        status.textContent = `Couldn't update: ${err.message}`;
+      }
+    });
 
     const info = document.createElement('div');
     info.className = 'info';
@@ -281,7 +298,7 @@ async function renderSavedList() {
       }
     });
 
-    li.append(img, info, removeBtn);
+    li.append(img, star, info, removeBtn);
     list.appendChild(li);
   });
 }
@@ -291,6 +308,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   const status = document.getElementById('status');
   const size = document.getElementById('sizeInput').value.trim();
   const note = document.getElementById('noteInput').value.trim();
+  const priority = document.getElementById('priorityInput').checked;
 
   try {
     const savingToSelect = document.getElementById('savingToSelect');
@@ -308,9 +326,11 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
         site: currentItem.site,
         size: size || null,
         note: note || null,
+        priority,
       }),
     });
     status.textContent = 'Saved!';
+    document.getElementById('priorityInput').checked = false;
     renderSavedList();
   } catch (err) {
     status.textContent = `Couldn't save: ${err.message}`;
@@ -351,6 +371,9 @@ async function loadFamilySection() {
 
     document.getElementById('familyCodeDisplay').value = familyId;
 
+    const [family] = await supabaseFetch(`families?id=eq.${familyId}&select=event_label`);
+    document.getElementById('eventLabelInput').value = family?.event_label || '';
+
     const members = await supabaseFetch(`wardrobes?family_id=eq.${familyId}&select=id,name`);
     const isGroup = members.length > 1;
 
@@ -374,6 +397,23 @@ async function loadFamilySection() {
     familyStatus.textContent = `Couldn't load sharing info: ${err.message}`;
   }
 }
+
+document.getElementById('eventLabelSaveBtn').addEventListener('click', async () => {
+  const eventLabelStatus = document.getElementById('eventLabelStatus');
+  const label = document.getElementById('eventLabelInput').value.trim();
+  try {
+    const wardrobeId = await getOrCreateWardrobeId();
+    const familyId = await ensureFamilyId(wardrobeId);
+    await supabaseFetch(`families?id=eq.${familyId}`, {
+      method: 'PATCH',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ event_label: label || null }),
+    });
+    eventLabelStatus.textContent = 'Saved!';
+  } catch (err) {
+    eventLabelStatus.textContent = `Couldn't save: ${err.message}`;
+  }
+});
 
 document.getElementById('joinFamilyBtn').addEventListener('click', async () => {
   const familyStatus = document.getElementById('familyStatus');

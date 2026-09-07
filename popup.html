@@ -40,6 +40,13 @@
     #familyCodeRow input { margin-bottom: 0; }
     #familyStatus { font-size: 11px; margin-top: 6px; text-align: center; color: #2a7a2a; min-height: 14px; }
     #familySection { margin-bottom: 10px; }
+    .checkbox-row { display: flex; align-items: center; gap: 6px; font-size: 13px; margin-bottom: 10px; cursor: pointer; }
+    .checkbox-row input { width: auto; margin: 0; }
+    #savedList .star { color: #d9a406; cursor: pointer; flex-shrink: 0; }
+    #eventLabelRow { display: flex; gap: 6px; margin-bottom: 4px; }
+    #eventLabelInput { margin-bottom: 0; }
+    #eventLabelRow button { width: auto; padding: 6px 10px; font-size: 12px; flex-shrink: 0; }
+    #eventLabelStatus { font-size: 11px; margin-bottom: 8px; text-align: center; color: #2a7a2a; min-height: 14px; }
   </style>
 </head>
 <body>
@@ -59,6 +66,7 @@
   <input type="text" id="sizeInput" placeholder="e.g. M, 42, UK 8">
   <label for="noteInput">Note (optional)</label>
   <input type="text" id="noteInput" placeholder="e.g. any colour is fine">
+  <label class="checkbox-row"><input type="checkbox" id="priorityInput"> ⭐ Really want this</label>
   <button id="saveBtn">Save to wardrobe</button>
   <div id="status"></div>
   <hr>
@@ -72,6 +80,12 @@
   <div id="wardrobeNameStatus"></div>
   <hr>
   <div id="familySection">
+    <label for="eventLabelInput">Occasion (optional)</label>
+    <div id="eventLabelRow">
+      <input type="text" id="eventLabelInput" placeholder="e.g. Riley's Birthday — Sept 20">
+      <button id="eventLabelSaveBtn">Save</button>
+    </div>
+    <div id="eventLabelStatus"></div>
     <button id="familyShareBtn">Copy wardrobe link</button>
     <p class="hint">One link. If anyone joins, tabs appear and each person hides their own surprises with one tap.</p>
     <div id="familyShareStatus"></div>
