@@ -356,9 +356,14 @@
         renderMyHint(hint, member, isMine, configured, familyId, () => showTab(member));
       };
 
+      // If this device already knows which tab is yours, land there by default instead
+      // of always showing whoever created the family first.
+      const myWardrobeId = getMyWardrobeId(familyId);
+      const defaultIndex = Math.max(0, members.findIndex((m) => m.id === myWardrobeId));
+
       members.forEach((member, i) => {
         const tab = document.createElement('button');
-        tab.className = 'tab' + (i === 0 ? ' active' : '');
+        tab.className = 'tab' + (i === defaultIndex ? ' active' : '');
         tab.textContent = member.name || 'Unnamed';
         tab.addEventListener('click', () => {
           tabs.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
@@ -368,7 +373,7 @@
         tabs.appendChild(tab);
       });
 
-      showTab(members[0]);
+      showTab(members[defaultIndex]);
     }
 
     async function loadWardrobe() {

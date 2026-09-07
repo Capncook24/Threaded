@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 12px; width: 260px; }
+    #preview { display: flex; gap: 8px; margin-bottom: 10px; }
+    #preview img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; background: #eee; flex-shrink: 0; }
+    #preview .details { min-width: 0; }
+    #preview .title { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    #preview .price { font-size: 13px; color: #555; margin-top: 2px; }
+    #preview .site { font-size: 11px; color: #999; }
+    label { font-size: 12px; display: block; margin-bottom: 3px; }
+    input[type="text"] { width: 100%; box-sizing: border-box; padding: 6px; font-size: 13px; margin-bottom: 10px; }
+    button { width: 100%; padding: 8px; font-size: 14px; cursor: pointer; }
+    #status { font-size: 12px; margin-top: 8px; text-align: center; color: #2a7a2a; }
+    #status:empty { display: none; }
+    hr { border: none; border-top: 1px solid #ddd; margin: 12px 0; }
+    #savedList { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; }
+    #savedList li { display: flex; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid #eee; font-size: 12px; }
+    #savedList img { width: 32px; height: 32px; object-fit: cover; border-radius: 3px; background: #eee; flex-shrink: 0; }
+    #savedList .info { min-width: 0; flex: 1; }
+    #savedList .info .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #savedList .info .meta { color: #888; }
+    #savedList button { width: auto; padding: 2px 6px; font-size: 11px; }
+    #savedCount { font-size: 12px; color: #666; margin-bottom: 6px; }
+    #shareBtn, #giftShareBtn { background: #f0f0f0; }
+    #giftShareBtn { margin-top: 6px; }
+    #shareStatus, #giftShareStatus { font-size: 12px; margin-top: 6px; text-align: center; color: #2a7a2a; }
+    #shareStatus:empty, #giftShareStatus:empty { display: none; }
+    .hint { font-size: 11px; color: #888; margin-top: 2px; margin-bottom: 0; }
+    #wardrobeNameRow { display: flex; gap: 6px; margin-bottom: 4px; }
+    #wardrobeNameInput { margin-bottom: 0; }
+    #wardrobeNameRow button { width: auto; padding: 6px 10px; font-size: 12px; flex-shrink: 0; }
+    #wardrobeNameStatus { font-size: 11px; margin-bottom: 8px; text-align: center; color: #2a7a2a; min-height: 14px; }
+    select { width: 100%; box-sizing: border-box; padding: 6px; font-size: 13px; margin-bottom: 10px; }
+    #joinFamilyRow { display: flex; gap: 6px; margin-top: 6px; }
+    #joinFamilyRow input { margin-bottom: 0; }
+    #joinFamilyRow button, #copyFamilyCodeBtn, #startFamilyBtn { width: auto; padding: 6px 10px; font-size: 12px; flex-shrink: 0; }
+    #startFamilyBtn { width: 100%; background: #f0f0f0; }
+    #familyCodeRow { display: flex; gap: 6px; }
+    #familyCodeRow input { margin-bottom: 0; }
+    #familyStatus { font-size: 11px; margin-top: 6px; text-align: center; color: #2a7a2a; min-height: 14px; }
+    #familySection { margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <div id="preview">
+    <img id="previewImage" src="" alt="" hidden>
+    <div class="details">
+      <div class="title" id="previewTitle">Loading…</div>
+      <div class="price" id="previewPrice"></div>
+      <div class="site" id="previewSite"></div>
+    </div>
+  </div>
+  <div id="savingToRow" hidden>
+    <label for="savingToSelect">Saving to</label>
+    <select id="savingToSelect"></select>
+  </div>
+  <label for="sizeInput">Size</label>
+  <input type="text" id="sizeInput" placeholder="e.g. M, 42, UK 8">
+  <label for="noteInput">Note (optional)</label>
+  <input type="text" id="noteInput" placeholder="e.g. any colour is fine">
+  <button id="saveBtn">Save to wardrobe</button>
+  <div id="status"></div>
+  <hr>
+  <div id="savedCount"></div>
+  <ul id="savedList"></ul>
+  <label for="wardrobeNameInput">Wardrobe name</label>
+  <div id="wardrobeNameRow">
+    <input type="text" id="wardrobeNameInput" placeholder="e.g. Riley's birthday wardrobe">
+    <button id="wardrobeNameSaveBtn">Save</button>
+  </div>
+  <div id="wardrobeNameStatus"></div>
+  <hr>
+  <div id="familySection">
+    <div id="familyNotJoined">
+      <label>Family</label>
+      <button id="startFamilyBtn">Start a family</button>
+      <div id="joinFamilyRow">
+        <input type="text" id="joinFamilyInput" placeholder="Or paste a family code">
+        <button id="joinFamilyBtn">Join</button>
+      </div>
+    </div>
+    <div id="familyJoined" hidden>
+      <label>Family code (share so others can join)</label>
+      <div id="familyCodeRow">
+        <input type="text" id="familyCodeDisplay" readonly>
+        <button id="copyFamilyCodeBtn">Copy</button>
+      </div>
+      <button id="familyShareBtn">Copy family wardrobe link</button>
+      <p class="hint">One link for everyone. Each person taps their own tab to hide their own surprises — safe to share widely.</p>
+      <div id="familyShareStatus"></div>
+    </div>
+    <div id="familyStatus"></div>
+  </div>
+  <div id="soloLinkSection">
+    <button id="shareBtn">Copy my wardrobe link</button>
+    <p class="hint">Safe to share widely — no claiming, nothing to spoil.</p>
+    <div id="shareStatus"></div>
+    <button id="giftShareBtn">Copy gift-coordination link</button>
+    <p class="hint">Only give this to people buying gifts — it shows what's already claimed. Never open it yourself.</p>
+    <div id="giftShareStatus"></div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
