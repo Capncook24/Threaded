@@ -24,10 +24,9 @@
     #savedList .info .meta { color: #888; }
     #savedList button { width: auto; padding: 2px 6px; font-size: 11px; }
     #savedCount { font-size: 12px; color: #666; margin-bottom: 6px; }
-    #shareBtn, #giftShareBtn { background: #f0f0f0; }
-    #giftShareBtn { margin-top: 6px; }
-    #shareStatus, #giftShareStatus { font-size: 12px; margin-top: 6px; text-align: center; color: #2a7a2a; }
-    #shareStatus:empty, #giftShareStatus:empty { display: none; }
+    #familyShareBtn { background: #f0f0f0; }
+    #familyShareStatus { font-size: 12px; margin-top: 6px; text-align: center; color: #2a7a2a; }
+    #familyShareStatus:empty { display: none; }
     .hint { font-size: 11px; color: #888; margin-top: 2px; margin-bottom: 0; }
     #wardrobeNameRow { display: flex; gap: 6px; margin-bottom: 4px; }
     #wardrobeNameInput { margin-bottom: 0; }
@@ -36,8 +35,7 @@
     select { width: 100%; box-sizing: border-box; padding: 6px; font-size: 13px; margin-bottom: 10px; }
     #joinFamilyRow { display: flex; gap: 6px; margin-top: 6px; }
     #joinFamilyRow input { margin-bottom: 0; }
-    #joinFamilyRow button, #copyFamilyCodeBtn, #startFamilyBtn { width: auto; padding: 6px 10px; font-size: 12px; flex-shrink: 0; }
-    #startFamilyBtn { width: 100%; background: #f0f0f0; }
+    #joinFamilyRow button, #copyFamilyCodeBtn { width: auto; padding: 6px 10px; font-size: 12px; flex-shrink: 0; }
     #familyCodeRow { display: flex; gap: 6px; }
     #familyCodeRow input { margin-bottom: 0; }
     #familyStatus { font-size: 11px; margin-top: 6px; text-align: center; color: #2a7a2a; min-height: 14px; }
@@ -74,33 +72,20 @@
   <div id="wardrobeNameStatus"></div>
   <hr>
   <div id="familySection">
-    <div id="familyNotJoined">
-      <label>Family</label>
-      <button id="startFamilyBtn">Start a family</button>
-      <div id="joinFamilyRow">
-        <input type="text" id="joinFamilyInput" placeholder="Or paste a family code">
-        <button id="joinFamilyBtn">Join</button>
-      </div>
+    <button id="familyShareBtn">Copy wardrobe link</button>
+    <p class="hint">One link. If anyone joins, tabs appear and each person hides their own surprises with one tap.</p>
+    <div id="familyShareStatus"></div>
+    <label for="familyCodeDisplay">Wardrobe code</label>
+    <div id="familyCodeRow">
+      <input type="text" id="familyCodeDisplay" readonly>
+      <button id="copyFamilyCodeBtn">Copy</button>
     </div>
-    <div id="familyJoined" hidden>
-      <label>Family code (share so others can join)</label>
-      <div id="familyCodeRow">
-        <input type="text" id="familyCodeDisplay" readonly>
-        <button id="copyFamilyCodeBtn">Copy</button>
-      </div>
-      <button id="familyShareBtn">Copy family wardrobe link</button>
-      <p class="hint">One link for everyone. Each person taps their own tab to hide their own surprises — safe to share widely.</p>
-      <div id="familyShareStatus"></div>
+    <p class="hint">Share this instead of the link if someone wants to join from their own extension.</p>
+    <div id="joinFamilyRow">
+      <input type="text" id="joinFamilyInput" placeholder="Join a different wardrobe (paste its code)">
+      <button id="joinFamilyBtn">Join</button>
     </div>
     <div id="familyStatus"></div>
-  </div>
-  <div id="soloLinkSection">
-    <button id="shareBtn">Copy my wardrobe link</button>
-    <p class="hint">Safe to share widely — no claiming, nothing to spoil.</p>
-    <div id="shareStatus"></div>
-    <button id="giftShareBtn">Copy gift-coordination link</button>
-    <p class="hint">Only give this to people buying gifts — it shows what's already claimed. Never open it yourself.</p>
-    <div id="giftShareStatus"></div>
   </div>
   <script src="popup.js"></script>
 </body>

@@ -37,6 +37,20 @@
       font-size:12px;color:var(--accent-ink);background:var(--accent-bg);
       padding:8px 12px;border-radius:10px;margin-bottom:24px;
     }
+    .who-gate{
+      background:var(--accent-bg);border-radius:16px;padding:20px;margin-bottom:24px;
+    }
+    .who-gate-q{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:17px;margin:0 0 4px;color:var(--ink);}
+    .who-gate-sub{font-size:12.5px;color:var(--muted);margin:0 0 16px;}
+    .who-options{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+    .who-options button{
+      font-size:13px;font-weight:600;padding:9px 18px;border-radius:20px;
+      background:#fff;color:var(--accent-ink);border:1px solid var(--accent-ink);cursor:pointer;font-family:inherit;
+    }
+    .who-none{
+      display:block;font-size:12px;color:var(--muted);background:none;border:none;
+      padding:0;cursor:pointer;text-decoration:underline;font-family:inherit;
+    }
     .tabs{
       display:flex;gap:8px;overflow-x:auto;margin-bottom:24px;padding-bottom:2px;
       -webkit-overflow-scrolling:touch;
@@ -97,6 +111,12 @@
     <div class="eyebrow" id="eyebrow" hidden>Wardrobe</div>
     <h1 id="heading">Wardrobe</h1>
     <div class="gift-banner" id="giftBanner" hidden>You're viewing the gift-coordination link — you can mark items you're getting.</div>
+    <div class="who-gate" id="whoGate" hidden>
+      <p class="who-gate-q">Which wardrobe is yours?</p>
+      <p class="who-gate-sub">So we can hide your own surprises and show you everyone else's.</p>
+      <div class="who-options" id="whoOptions"></div>
+      <button class="who-none" id="whoNoneBtn">I'm not on this list — I'm just here to get someone a gift</button>
+    </div>
     <div class="tabs" id="tabs" hidden></div>
     <div id="myHint"></div>
     <div id="empty" hidden>No items saved yet.</div>
@@ -325,7 +345,20 @@
       const members = family?.wardrobes || [];
       if (members.length === 0) {
         document.getElementById('error').hidden = false;
-        document.getElementById('error').textContent = 'No family found for this link.';
+        document.getElementById('error').textContent = 'No wardrobe found for this link.';
+        return;
+      }
+
+      // A wardrobe with nobody else in it yet is just... a wardrobe. No tabs, no
+      // claim mechanics to explain — those only start to matter once someone joins.
+      if (members.length === 1) {
+        const solo = members[0];
+        if (solo.name) {
+          document.getElementById('heading').textContent = solo.name;
+          document.getElementById('eyebrow').hidden = false;
+          document.getElementById('eyebrow').textContent = 'Wardrobe';
+        }
+        renderList(solo.items || [], false);
         return;
       }
 
@@ -334,46 +367,73 @@
       document.getElementById('heading').textContent = 'Wardrobes';
 
       const banner = document.getElementById('giftBanner');
-      banner.hidden = false;
-
+      const whoGate = document.getElementById('whoGate');
+      const whoOptions = document.getElementById('whoOptions');
+      const whoNoneBtn = document.getElementById('whoNoneBtn');
       const tabs = document.getElementById('tabs');
       const hint = document.getElementById('myHint');
-      tabs.hidden = false;
 
-      // Nobody sees any claim info until *someone* on this device has marked which
-      // tab is theirs — so a first-ever visit can never accidentally spoil anything.
-      // Once marked, that one tab stays safe forever here while every other tab
-      // shows full claiming — one link serves both the owner and gift-buyers.
+      // "none" is a real, stored answer distinct from "not answered yet" (null) — it
+      // means a viewer confirmed they don't own any wardrobe here, so every tab should
+      // just show claiming normally for them, with nothing of their own to protect.
       const showTab = (member) => {
         const myWardrobeId = getMyWardrobeId(familyId);
-        banner.textContent = myWardrobeId
-          ? "Your own tab is hidden from claims on this device. Everyone else's tabs show what's already claimed."
-          : "Tap your own name below, then \"hide my surprises,\" so claiming works for everyone else without spoiling yours.";
-        const configured = myWardrobeId !== null;
+        banner.hidden = false;
+        banner.textContent = myWardrobeId === 'none'
+          ? "You're not one of the people on this list, so claiming works normally on every tab."
+          : "Your own tab is hidden from claims on this device. Everyone else's tabs show what's already claimed.";
         const isMine = member.id === myWardrobeId;
-        const tabGiftMode = configured && !isMine;
+        const tabGiftMode = myWardrobeId !== null && !isMine;
         renderList(member.items || [], tabGiftMode);
-        renderMyHint(hint, member, isMine, configured, familyId, () => showTab(member));
+        renderMyHint(hint, member, isMine, myWardrobeId !== null, familyId, () => showTab(member));
       };
 
-      // If this device already knows which tab is yours, land there by default instead
-      // of always showing whoever created the family first.
-      const myWardrobeId = getMyWardrobeId(familyId);
-      const defaultIndex = Math.max(0, members.findIndex((m) => m.id === myWardrobeId));
+      const renderTabsView = () => {
+        whoGate.hidden = true;
+        tabs.hidden = false;
+        tabs.innerHTML = '';
 
-      members.forEach((member, i) => {
-        const tab = document.createElement('button');
-        tab.className = 'tab' + (i === defaultIndex ? ' active' : '');
-        tab.textContent = member.name || 'Unnamed';
-        tab.addEventListener('click', () => {
-          tabs.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
-          tab.classList.add('active');
-          showTab(member);
+        // Land on your own tab by default if this device already knows who you are.
+        const myWardrobeId = getMyWardrobeId(familyId);
+        const defaultIndex = Math.max(0, members.findIndex((m) => m.id === myWardrobeId));
+
+        members.forEach((member, i) => {
+          const tab = document.createElement('button');
+          tab.className = 'tab' + (i === defaultIndex ? ' active' : '');
+          tab.textContent = member.name || 'Unnamed';
+          tab.addEventListener('click', () => {
+            tabs.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
+            tab.classList.add('active');
+            showTab(member);
+          });
+          tabs.appendChild(tab);
         });
-        tabs.appendChild(tab);
-      });
 
-      showTab(members[defaultIndex]);
+        showTab(members[defaultIndex]);
+      };
+
+      // First-ever visit on this device: ask up front which wardrobe is theirs (or
+      // confirm they have none) before showing any tabs or items — so nobody can land
+      // on a tab, see nothing, and wonder where claiming went.
+      if (getMyWardrobeId(familyId) === null) {
+        whoGate.hidden = false;
+        whoOptions.innerHTML = '';
+        members.forEach((member) => {
+          const btn = document.createElement('button');
+          btn.textContent = member.name || 'Unnamed';
+          btn.addEventListener('click', () => {
+            setMyWardrobeId(familyId, member.id);
+            renderTabsView();
+          });
+          whoOptions.appendChild(btn);
+        });
+        whoNoneBtn.onclick = () => {
+          setMyWardrobeId(familyId, 'none');
+          renderTabsView();
+        };
+      } else {
+        renderTabsView();
+      }
     }
 
     async function loadWardrobe() {

@@ -33,6 +33,28 @@ async function getOrCreateWardrobeId() {
   return id;
 }
 
+// Every wardrobe belongs to a family from the moment it exists — even a family of
+// one. That way there's only ever one kind of shareable link; "joining" just means
+// merging your existing wardrobe into someone else's family instead of your own.
+async function ensureFamilyId(wardrobeId) {
+  const rows = await supabaseFetch(`wardrobes?id=eq.${wardrobeId}&select=family_id`);
+  let familyId = rows?.[0]?.family_id || null;
+  if (familyId) return familyId;
+
+  const [family] = await supabaseFetch('families', {
+    method: 'POST',
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify({}),
+  });
+  familyId = family.id;
+  await supabaseFetch(`wardrobes?id=eq.${wardrobeId}`, {
+    method: 'PATCH',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ family_id: familyId }),
+  });
+  return familyId;
+}
+
 function extractProductInfo() {
   const host = location.hostname;
   const text = (sel) => document.querySelector(sel)?.textContent?.trim() || null;
@@ -321,59 +343,22 @@ document.getElementById('wardrobeNameSaveBtn').addEventListener('click', async (
   }
 });
 
-document.getElementById('shareBtn').addEventListener('click', async () => {
-  const shareStatus = document.getElementById('shareStatus');
-  try {
-    const wardrobeId = await getOrCreateWardrobeId();
-    const link = `${SHARE_BASE_URL}?w=${wardrobeId}`;
-    await navigator.clipboard.writeText(link);
-    shareStatus.textContent = 'Link copied!';
-  } catch (err) {
-    shareStatus.textContent = `Couldn't copy link: ${err.message}`;
-  }
-});
-
-document.getElementById('giftShareBtn').addEventListener('click', async () => {
-  const giftShareStatus = document.getElementById('giftShareStatus');
-  try {
-    const wardrobeId = await getOrCreateWardrobeId();
-    const rows = await supabaseFetch(`wardrobes?id=eq.${wardrobeId}&select=gift_token`);
-    const giftToken = rows?.[0]?.gift_token;
-    if (!giftToken) throw new Error('No gift token found for this wardrobe');
-    const link = `${SHARE_BASE_URL}?w=${wardrobeId}&g=${giftToken}`;
-    await navigator.clipboard.writeText(link);
-    giftShareStatus.textContent = 'Gift link copied!';
-  } catch (err) {
-    giftShareStatus.textContent = `Couldn't copy link: ${err.message}`;
-  }
-});
-
 async function loadFamilySection() {
   const familyStatus = document.getElementById('familyStatus');
   try {
     const wardrobeId = await getOrCreateWardrobeId();
-    const rows = await supabaseFetch(`wardrobes?id=eq.${wardrobeId}&select=family_id`);
-    const familyId = rows?.[0]?.family_id || null;
-
-    document.getElementById('familyNotJoined').hidden = !!familyId;
-    document.getElementById('familyJoined').hidden = !familyId;
-    document.getElementById('savingToRow').hidden = !familyId;
-    // Once you're in a family, the family link already includes your own tab —
-    // no need for a separate personal link that just adds confusion.
-    document.getElementById('soloLinkSection').hidden = !!familyId;
-
-    const nameLabel = document.querySelector('label[for="wardrobeNameInput"]');
-    nameLabel.textContent = familyId ? 'Your name' : 'Wardrobe name';
-
-    if (!familyId) {
-      const select = document.getElementById('savingToSelect');
-      select.innerHTML = '';
-      return;
-    }
+    const familyId = await ensureFamilyId(wardrobeId);
 
     document.getElementById('familyCodeDisplay').value = familyId;
 
     const members = await supabaseFetch(`wardrobes?family_id=eq.${familyId}&select=id,name`);
+    const isGroup = members.length > 1;
+
+    document.getElementById('savingToRow').hidden = !isGroup;
+
+    const nameLabel = document.querySelector('label[for="wardrobeNameInput"]');
+    nameLabel.textContent = isGroup ? 'Your name' : 'Wardrobe name';
+
     const select = document.getElementById('savingToSelect');
     select.innerHTML = '';
     members.forEach((member) => {
@@ -386,30 +371,9 @@ async function loadFamilySection() {
     });
     select.value = wardrobeId;
   } catch (err) {
-    familyStatus.textContent = `Couldn't load family info: ${err.message}`;
+    familyStatus.textContent = `Couldn't load sharing info: ${err.message}`;
   }
 }
-
-document.getElementById('startFamilyBtn').addEventListener('click', async () => {
-  const familyStatus = document.getElementById('familyStatus');
-  try {
-    const wardrobeId = await getOrCreateWardrobeId();
-    const [family] = await supabaseFetch('families', {
-      method: 'POST',
-      headers: { Prefer: 'return=representation' },
-      body: JSON.stringify({}),
-    });
-    await supabaseFetch(`wardrobes?id=eq.${wardrobeId}`, {
-      method: 'PATCH',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ family_id: family.id }),
-    });
-    familyStatus.textContent = 'Family started!';
-    loadFamilySection();
-  } catch (err) {
-    familyStatus.textContent = `Couldn't start family: ${err.message}`;
-  }
-});
 
 document.getElementById('joinFamilyBtn').addEventListener('click', async () => {
   const familyStatus = document.getElementById('familyStatus');
