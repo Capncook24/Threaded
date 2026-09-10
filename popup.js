@@ -261,7 +261,8 @@ async function renderSavedList() {
       `items?wardrobe_id=eq.${wardrobeId}&select=*&order=priority.desc,created_at.desc`
     );
   } catch (err) {
-    status.textContent = `Couldn't load saved items: ${err.message}`;
+    console.error(err);
+    status.textContent = "Couldn't load your saved items — try reopening the popup.";
     return;
   }
 
@@ -290,7 +291,8 @@ async function renderSavedList() {
         });
         renderSavedList();
       } catch (err) {
-        status.textContent = `Couldn't update: ${err.message}`;
+        console.error(err);
+        status.textContent = "Couldn't update that — try again.";
       }
     });
 
@@ -311,6 +313,57 @@ async function renderSavedList() {
       info.append(note);
     }
 
+    const editBtn = document.createElement('button');
+    editBtn.textContent = '✎';
+    editBtn.title = 'Edit size/variant or note';
+    editBtn.addEventListener('click', () => {
+      info.innerHTML = '';
+      const editTitle = document.createElement('div');
+      editTitle.className = 't';
+      editTitle.textContent = item.title || '(untitled)';
+
+      const sizeEdit = document.createElement('input');
+      sizeEdit.type = 'text';
+      sizeEdit.className = 'edit-input';
+      sizeEdit.placeholder = 'Size / variant';
+      sizeEdit.value = item.size || '';
+
+      const noteEdit = document.createElement('input');
+      noteEdit.type = 'text';
+      noteEdit.className = 'edit-input';
+      noteEdit.placeholder = 'Note';
+      noteEdit.value = item.note || '';
+
+      const editRow = document.createElement('div');
+      editRow.className = 'edit-row';
+
+      const saveEditBtn = document.createElement('button');
+      saveEditBtn.textContent = 'Save';
+      saveEditBtn.addEventListener('click', async () => {
+        try {
+          await supabaseFetch(`items?id=eq.${item.id}`, {
+            method: 'PATCH',
+            headers: { Prefer: 'return=minimal' },
+            body: JSON.stringify({
+              size: sizeEdit.value.trim() || null,
+              note: noteEdit.value.trim() || null,
+            }),
+          });
+          renderSavedList();
+        } catch (err) {
+          console.error(err);
+          status.textContent = "Couldn't save that — try again.";
+        }
+      });
+
+      const cancelEditBtn = document.createElement('button');
+      cancelEditBtn.textContent = 'Cancel';
+      cancelEditBtn.addEventListener('click', () => renderSavedList());
+
+      editRow.append(saveEditBtn, cancelEditBtn);
+      info.append(editTitle, sizeEdit, noteEdit, editRow);
+    });
+
     const removeBtn = document.createElement('button');
     removeBtn.textContent = '✕';
     removeBtn.addEventListener('click', async () => {
@@ -318,11 +371,12 @@ async function renderSavedList() {
         await supabaseFetch(`items?id=eq.${item.id}`, { method: 'DELETE' });
         renderSavedList();
       } catch (err) {
-        status.textContent = `Couldn't delete: ${err.message}`;
+        console.error(err);
+        status.textContent = "Couldn't delete that — try again.";
       }
     });
 
-    li.append(img, star, info, removeBtn);
+    li.append(img, star, info, editBtn, removeBtn);
     list.appendChild(li);
   });
 }
@@ -357,7 +411,8 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     document.getElementById('priorityInput').checked = false;
     renderSavedList();
   } catch (err) {
-    status.textContent = `Couldn't save: ${err.message}`;
+    console.error(err);
+    status.textContent = "Couldn't save that — try again.";
   }
 });
 
@@ -383,7 +438,8 @@ document.getElementById('wardrobeNameSaveBtn').addEventListener('click', async (
     });
     nameStatus.textContent = 'Saved!';
   } catch (err) {
-    nameStatus.textContent = `Couldn't save: ${err.message}`;
+    console.error(err);
+    nameStatus.textContent = "Couldn't save — try again.";
   }
 });
 
@@ -418,7 +474,8 @@ async function loadFamilySection() {
     });
     select.value = wardrobeId;
   } catch (err) {
-    familyStatus.textContent = `Couldn't load sharing info: ${err.message}`;
+    console.error(err);
+    familyStatus.textContent = "Couldn't load sharing info — try reopening the popup.";
   }
 }
 
@@ -435,7 +492,8 @@ document.getElementById('eventLabelSaveBtn').addEventListener('click', async () 
     });
     eventLabelStatus.textContent = 'Saved!';
   } catch (err) {
-    eventLabelStatus.textContent = `Couldn't save: ${err.message}`;
+    console.error(err);
+    eventLabelStatus.textContent = "Couldn't save — try again.";
   }
 });
 
@@ -458,7 +516,8 @@ document.getElementById('joinFamilyBtn').addEventListener('click', async () => {
     familyStatus.textContent = 'Joined family!';
     loadFamilySection();
   } catch (err) {
-    familyStatus.textContent = `Couldn't join family: ${err.message}`;
+    console.error(err);
+    familyStatus.textContent = "Couldn't join that list — check the code and try again.";
   }
 });
 
@@ -468,7 +527,8 @@ document.getElementById('copyFamilyCodeBtn').addEventListener('click', async () 
     await navigator.clipboard.writeText(document.getElementById('familyCodeDisplay').value);
     familyStatus.textContent = 'Code copied!';
   } catch (err) {
-    familyStatus.textContent = `Couldn't copy code: ${err.message}`;
+    console.error(err);
+    familyStatus.textContent = "Couldn't copy — try again.";
   }
 });
 
@@ -480,7 +540,8 @@ document.getElementById('familyShareBtn').addEventListener('click', async () => 
     await navigator.clipboard.writeText(link);
     familyShareStatus.textContent = 'Link copied!';
   } catch (err) {
-    familyShareStatus.textContent = `Couldn't copy link: ${err.message}`;
+    console.error(err);
+    familyShareStatus.textContent = "Couldn't copy — try again.";
   }
 });
 
