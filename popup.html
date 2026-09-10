@@ -62,19 +62,19 @@
     <label for="savingToSelect">Saving to</label>
     <select id="savingToSelect"></select>
   </div>
-  <label for="sizeInput">Size</label>
-  <input type="text" id="sizeInput" placeholder="e.g. M, 42, UK 8">
+  <label for="sizeInput">Size / variant (optional)</label>
+  <input type="text" id="sizeInput" placeholder="e.g. M, 128GB, Black">
   <label for="noteInput">Note (optional)</label>
   <input type="text" id="noteInput" placeholder="e.g. any colour is fine">
   <label class="checkbox-row"><input type="checkbox" id="priorityInput"> ⭐ Really want this</label>
-  <button id="saveBtn">Save to wardrobe</button>
+  <button id="saveBtn">Save to list</button>
   <div id="status"></div>
   <hr>
   <div id="savedCount"></div>
   <ul id="savedList"></ul>
-  <label for="wardrobeNameInput">Wardrobe name</label>
+  <label for="wardrobeNameInput">List name</label>
   <div id="wardrobeNameRow">
-    <input type="text" id="wardrobeNameInput" placeholder="e.g. Riley's birthday wardrobe">
+    <input type="text" id="wardrobeNameInput" placeholder="e.g. Riley's Christmas list">
     <button id="wardrobeNameSaveBtn">Save</button>
   </div>
   <div id="wardrobeNameStatus"></div>
@@ -86,17 +86,17 @@
       <button id="eventLabelSaveBtn">Save</button>
     </div>
     <div id="eventLabelStatus"></div>
-    <button id="familyShareBtn">Copy wardrobe link</button>
+    <button id="familyShareBtn">Copy list link</button>
     <p class="hint">One link. If anyone joins, tabs appear and each person hides their own surprises with one tap.</p>
     <div id="familyShareStatus"></div>
-    <label for="familyCodeDisplay">Wardrobe code</label>
+    <label for="familyCodeDisplay">List code</label>
     <div id="familyCodeRow">
       <input type="text" id="familyCodeDisplay" readonly>
       <button id="copyFamilyCodeBtn">Copy</button>
     </div>
     <p class="hint">Share this instead of the link if someone wants to join from their own extension.</p>
     <div id="joinFamilyRow">
-      <input type="text" id="joinFamilyInput" placeholder="Join a different wardrobe (paste its code)">
+      <input type="text" id="joinFamilyInput" placeholder="Join a different list (paste its code)">
       <button id="joinFamilyBtn">Join</button>
     </div>
     <div id="familyStatus"></div>

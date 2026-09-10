@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Threaded",
   "version": "1.0.0",
-  "description": "Save clothing you want from any store into a shareable wardrobe, sized and noted, so gift-givers know exactly what to get.",
+  "description": "Save anything you want from any store into a shareable wishlist, sized and noted, so gift-givers know exactly what to get.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

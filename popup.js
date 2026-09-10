@@ -152,6 +152,30 @@ function extractProductInfo() {
         };
       },
     },
+    {
+      // Amazon's markup is well-documented and fairly stable, but this rule is
+      // best-effort/untested — Amazon blocks the automated browser this was built
+      // with, so verify on a real product page and report back if it's off.
+      match: (h) => h.includes('amazon.'),
+      extract: () => {
+        const img = document.querySelector('#landingImage') || document.querySelector('#imgTagWrapperId img');
+        return {
+          title: text('#productTitle'),
+          price: text(
+            '#corePriceDisplay_desktop_feature_div .a-price .a-offscreen, #corePrice_feature_div .a-price .a-offscreen, .a-price .a-offscreen'
+          ),
+          image: img?.src || null,
+        };
+      },
+    },
+    {
+      // John Lewis doesn't set og:image at all, so the generic fallback below never
+      // finds one — title and price already come through fine via that fallback.
+      match: (h) => h.includes('johnlewis.com'),
+      extract: () => ({
+        image: document.querySelector('img[class*="ImageMagnifier"]')?.src || null,
+      }),
+    },
   ];
 
   let title = null;
@@ -380,7 +404,7 @@ async function loadFamilySection() {
     document.getElementById('savingToRow').hidden = !isGroup;
 
     const nameLabel = document.querySelector('label[for="wardrobeNameInput"]');
-    nameLabel.textContent = isGroup ? 'Your name' : 'Wardrobe name';
+    nameLabel.textContent = isGroup ? 'Your name' : 'List name';
 
     const select = document.getElementById('savingToSelect');
     select.innerHTML = '';
